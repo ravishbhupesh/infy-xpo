@@ -6,8 +6,8 @@ import com.infosys.xpo.poc.customer.service.app.model.ChatMessage;
 import com.infosys.xpo.poc.customer.service.app.model.ChatRequest;
 import com.infosys.xpo.poc.customer.service.app.model.ChatResponse;
 import com.infosys.xpo.poc.customer.service.app.model.genai.Message;
-import com.infosys.xpo.poc.customer.service.app.model.genai.Request;
-import com.infosys.xpo.poc.customer.service.app.model.genai.Response;
+import com.infosys.xpo.poc.customer.service.app.model.ollama.Request;
+import com.infosys.xpo.poc.customer.service.app.model.ollama.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,31 +23,34 @@ import java.util.List;
 
 @Service
 @Slf4j
-public class GenAiService {
+public class OllamaService {
 
-    @Value("${app.openai.model}")
+    @Value("${app.ollama.model}")
     private String model;
-    @Value("${app.openai.apiKey}")
+    @Value("${app.ollama.apiKey}")
     private String apiKey;
 
-    @Value("${app.openai.url}")
+    @Value("${app.ollama.url}")
     private String url;
 
     @Autowired
     private RestTemplate restTemplate;
     @Autowired
     private ObjectMapper objectMapper;
+    private final HttpHeaders headers;
+
+    public OllamaService() {
+        headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        //headers.set("Authorization", "Bearer " + apiKey);
+    }
 
     public ChatResponse handleRequest(ChatRequest chatRequest) {
         log.info("ChatService::sendMessage START");
         try {
             Request request = createRequest(chatRequest);
             String requestBody = objectMapper.writeValueAsString(request);
-            log.debug("Request created for openAi : {}", requestBody);
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("Authorization", "Bearer " + apiKey);
+            log.debug("Request created for ollama : {}", requestBody);
 
             HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
             String responseRaw = restTemplate.exchange(url, HttpMethod.POST, entity, String.class).getBody();
@@ -67,7 +70,7 @@ public class GenAiService {
 
     private ChatResponse createResponse(Response response) {
         ChatResponse chatResponse = new ChatResponse();
-        chatResponse.setMessage((null != response) ? response.getChoices().get(0).getMessage().getContent() : "null");
+        chatResponse.setMessage((null != response) ? response.getMessage().getContent() : "null");
         return chatResponse;
     }
 
@@ -81,8 +84,9 @@ public class GenAiService {
             ChatMessage chatMessage = history.get(i);
             messages.add(i++, new Message("AI".equals(chatMessage.getFrom()) ? "assistant" : "user" , chatMessage.getMessage()));
         } ;
-        messages.add(i, new Message("user", chatRequest.getMessage()));
+        messages.add(i, new Message("User", chatRequest.getMessage()));
         request.setMessages(messages);
+        request.setStream(false);
         return request;
     }
 }

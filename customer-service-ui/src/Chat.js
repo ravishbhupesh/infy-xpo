@@ -16,6 +16,7 @@ const Chat = () => {
             try {
                 const response = await axios.post('http://localhost:8080/xpo/chat', {
                     message: inputValue,
+                    history: conversations,
                 });
                 const aiResponseMessage = response.data.message;
                 const aiResponse = { message: aiResponseMessage, from: 'AI' };

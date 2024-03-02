@@ -3,7 +3,10 @@ app:
     url: https://api.openai.com/v1/chat/completions
     model: gpt-3.5-turbo
     apiKey: YOUR_API_KEY
-
+  ollama:
+    url: http://localhost:11434/api/chat
+    model: llama2
+    apiKey: YOUR_API_KEY
 logging:
   level:
     root: INFO
