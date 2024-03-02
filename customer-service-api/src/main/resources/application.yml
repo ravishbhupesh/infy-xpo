@@ -1,0 +1,16 @@
+app:
+  openai:
+    url: https://api.openai.com/v1/chat/completions
+    model: gpt-3.5-turbo
+    apiKey: YOUR_API_KEY
+
+logging:
+  level:
+    root: INFO
+    com:
+      infosys:
+        xpo:
+          poc:
+            customer:
+              service:
+                app: DEBUG

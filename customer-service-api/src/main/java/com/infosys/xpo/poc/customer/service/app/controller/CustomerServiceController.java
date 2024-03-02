@@ -1,14 +1,13 @@
 package com.infosys.xpo.poc.customer.service.app.controller;
 
-import com.infosys.xpo.poc.customer.service.app.model.Request;
-import com.infosys.xpo.poc.customer.service.app.model.Response;
+import com.infosys.xpo.poc.customer.service.app.model.ChatRequest;
+import com.infosys.xpo.poc.customer.service.app.model.ChatResponse;
 import com.infosys.xpo.poc.customer.service.app.service.GenAiService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -19,18 +18,18 @@ public class CustomerServiceController {
     private GenAiService genAiService;
 
     @PostMapping("/xpo/chat")
-    public ResponseEntity<Response> handleRequest(@RequestBody Request request) {
-        log.info("Request Received : {}", request);
-        Response response = null;
+    public ResponseEntity<ChatResponse> handleRequest(@RequestBody ChatRequest chatRequest) {
+        log.info("Request Received : {}", chatRequest);
+        ChatResponse chatResponse = null;
         try {
-            response = genAiService.handleRequest(request);
-            return ResponseEntity.ok(response);
+            chatResponse = genAiService.handleRequest(chatRequest);
+            return ResponseEntity.ok(chatResponse);
         } catch (Exception e ) {
           log.error("Error occurred while processing request : {}", e.getMessage());
-          response = new Response("Error!!! Please try again!!!");
-          return ResponseEntity.ok(response);
+          chatResponse = new ChatResponse("Error!!! Please try again!!!");
+          return ResponseEntity.ok(chatResponse);
         } finally {
-            log.info("Request processing Complete!!! Response : {}", response);
+            log.info("Request processing Complete!!! Response : {}", chatResponse);
         }
     }
 }
