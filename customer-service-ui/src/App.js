@@ -8,11 +8,18 @@ function App() {
     <div className="App">
       <Header />
       <div className="app-container">
+        <div className="static-container">
+          <h2>Some fancy component</h2>
+          <p>Placeholder for more information.</p>
+        </div>
+        <div className="static-container">
+          <h2>Another fancy component</h2>
+          <p>Placeholder for more information.</p>
+        </div>
         <div className="chat-container">
           <Chat />
         </div>
       </div>
-      <Footer />
       <Footer />
     </div>
   );
