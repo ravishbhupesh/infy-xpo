@@ -26,8 +26,8 @@ public class CustomerServiceController {
         log.info("Request Received : {}", chatRequest);
         ChatResponse chatResponse = null;
         try {
-            //chatResponse = genAiService.handleRequest(chatRequest);
-            chatResponse = ollamaService.handleRequest(chatRequest);
+            chatResponse = genAiService.handleRequest(chatRequest);
+            //chatResponse = ollamaService.handleRequest(chatRequest);
             return ResponseEntity.ok(chatResponse);
         } catch (Exception e ) {
           log.error("Error occurred while processing request : {}", e.getMessage());

@@ -1,62 +1,51 @@
 package com.infosys.xpo.poc.customer.service.app.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.infosys.xpo.poc.customer.service.app.exception.CustomerServiceException;
-import com.infosys.xpo.poc.customer.service.app.model.ChatMessage;
 import com.infosys.xpo.poc.customer.service.app.model.ChatRequest;
 import com.infosys.xpo.poc.customer.service.app.model.ChatResponse;
-import com.infosys.xpo.poc.customer.service.app.model.genai.Message;
-import com.infosys.xpo.poc.customer.service.app.model.genai.Request;
-import com.infosys.xpo.poc.customer.service.app.model.genai.Response;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
-import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class GenAiService {
 
-    @Value("${app.openai.model}")
-    private String model;
-    @Value("${app.openai.apiKey}")
+    @Value("${spring.ai.openai.api-key}")
     private String apiKey;
-
-    @Value("${app.openai.url}")
-    private String url;
-
-    @Autowired
-    private RestTemplate restTemplate;
-    @Autowired
-    private ObjectMapper objectMapper;
+    @Value("${spring.ai.openai.chat.model}")
+    private String model;
+    @Value("${spring.ai.openai.chat.temperature}")
+    private Float temperature;
 
     public ChatResponse handleRequest(ChatRequest chatRequest) {
         log.info("ChatService::sendMessage START");
         try {
-            Request request = createRequest(chatRequest);
-            String requestBody = objectMapper.writeValueAsString(request);
-            log.debug("Request created for openAi : {}", requestBody);
+            log.info("API Key : {}", apiKey);
+            OpenAiApi openAiApi = new OpenAiApi(apiKey);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("Authorization", "Bearer " + apiKey);
+            OpenAiApi.ChatCompletionRequest chatCompletionRequest = new OpenAiApi.ChatCompletionRequest(createMessageList(chatRequest), model, temperature);
+            log.debug("Chat Completion Request : {}", chatCompletionRequest);
 
-            HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
-            String responseRaw = restTemplate.exchange(url, HttpMethod.POST, entity, String.class).getBody();
-            log.debug("open ai raw response : {}", responseRaw);
+            ResponseEntity<OpenAiApi.ChatCompletion> chatCompletionResponseEntity = openAiApi.chatCompletionEntity(chatCompletionRequest);
 
-            Response response = objectMapper.readValue(responseRaw, Response.class);
-            log.debug("Object response : {}", response);
+            OpenAiApi.ChatCompletion chatCompletion = chatCompletionResponseEntity.getBody();
 
-            return createResponse(response);
+            String responseStr = null;
+            if (null != chatCompletion) {
+                List<OpenAiApi.ChatCompletion.Choice> choices = chatCompletion.choices();
+                OpenAiApi.ChatCompletionMessage chatCompletionMessage = choices.get(0).message();
+                responseStr = chatCompletionMessage.content();
+            }
+
+            return new ChatResponse(responseStr);
         } catch (Exception e) {
             log.error("Exception : {}", e.getMessage());
             throw new CustomerServiceException(e.getMessage(), e);
@@ -65,24 +54,17 @@ public class GenAiService {
         }
     }
 
-    private ChatResponse createResponse(Response response) {
-        ChatResponse chatResponse = new ChatResponse();
-        chatResponse.setMessage((null != response) ? response.getChoices().get(0).getMessage().getContent() : "null");
-        return chatResponse;
+    private List<OpenAiApi.ChatCompletionMessage> createMessageList(ChatRequest chatRequest) {
+
+        // Add history of messages
+        List<OpenAiApi.ChatCompletionMessage> messages = chatRequest.getHistory().stream().map(m -> {
+            OpenAiApi.ChatCompletionMessage.Role role = "AI".equals(m.getFrom()) ? OpenAiApi.ChatCompletionMessage.Role.ASSISTANT : OpenAiApi.ChatCompletionMessage.Role.USER;
+            return new OpenAiApi.ChatCompletionMessage(m.getMessage(), role);
+        }).collect(Collectors.toList());
+
+        messages.add(new OpenAiApi.ChatCompletionMessage(chatRequest.getMessage(), OpenAiApi.ChatCompletionMessage.Role.USER));
+
+        return messages;
     }
 
-    private Request createRequest(ChatRequest chatRequest) {
-        Request request = new Request();
-        request.setModel(model);
-        List<Message> messages = new LinkedList<>();
-        List<ChatMessage> history = chatRequest.getHistory();
-        int i = 0;
-        while (i < history.size()) {
-            ChatMessage chatMessage = history.get(i);
-            messages.add(i++, new Message("AI".equals(chatMessage.getFrom()) ? "assistant" : "user" , chatMessage.getMessage()));
-        } ;
-        messages.add(i, new Message("user", chatRequest.getMessage()));
-        request.setMessages(messages);
-        return request;
-    }
 }

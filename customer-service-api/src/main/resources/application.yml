@@ -1,13 +1,17 @@
-app:
-  openai:
-    url: https://api.openai.com/v1/chat/completions
-    model: gpt-3.5-turbo
-    apiKey: YOUR_API_KEY
-  ollama:
-    url: http://localhost:11434/api/chat
-    model: llama2
-    apiKey: YOUR_API_KEY
-logging:
+spring:
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        options:
+          model: llama2
+          temperature: 0.0 #default 0.7
+    openai:
+      api-key: YOUR_API_KEY
+      chat:
+        base-url: https://api.openai.com/v1/chat/completions
+        model: gpt-3.5-turbo
+        temperature: 0.0 #default 0.8
   level:
     root: INFO
     com:
